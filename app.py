@@ -48,6 +48,7 @@ if opcao == "1. Hangar (Configurar Agência)":
                 for arq in arquivos: texto += ler_pdf(arq) + "\n"
                 dna = analisar_dna_cliente(api_key, texto, nuances)
                 st.session_state['agencias'][nome] = dna
+                st.session_state['agencias'][nome] = dna
                 st.success(f"Agência '{nome}' calibrada!")
                 st.info(dna)
         else:
@@ -75,23 +76,32 @@ elif opcao == "2. Lançamento (Analisar Missão)":
                 # Chama a IA
                 resultado_bruto = analisar_edital_com_dna(api_key, texto_edital, dna)
                 
-                # --- CORTE EM 3 ESTÁGIOS ---
-                # O código tenta dividir o texto usando os separadores que criamos
-                try:
-                    # Separa a Parte 1 (Impeditivos) do resto
-                    partes_1_resto = resultado_bruto.split("|||SEP_CONSULTOR|||")
-                    parte_impeditivos = partes_1_resto[0]
+                # --- CORTE INTELIGENTE ---
+                # Remove formatação que a IA pode ter adicionado nas tags (ex: negrito)
+                texto_limpo = resultado_bruto.replace("**|||SEP_CONSULTOR|||**", "|||SEP_CONSULTOR|||")
+                texto_limpo = texto_limpo.replace("**|||SEP_CLIENTE|||**", "|||SEP_CLIENTE|||")
+                
+                partes = []
+                
+                # Tenta dividir Parte 1 e Resto
+                if "|||SEP_CONSULTOR|||" in texto_limpo:
+                    temp = texto_limpo.split("|||SEP_CONSULTOR|||")
+                    parte_impeditivos = temp[0]
+                    resto = temp[1]
                     
-                    # Separa o resto em Parte 2 (Consultor) e Parte 3 (Cliente)
-                    partes_2_3 = partes_1_resto[1].split("|||SEP_CLIENTE|||")
-                    parte_consultor = partes_2_3[0]
-                    parte_cliente = partes_2_3[1]
-                    
-                except IndexError:
-                    # Se a IA falhar na formatação, mostra tudo junto para não dar erro
-                    parte_impeditivos = resultado_bruto
-                    parte_consultor = "⚠️ Erro na formatação automática."
-                    parte_cliente = "⚠️ Erro na formatação automática."
+                    # Tenta dividir Parte 2 e Parte 3
+                    if "|||SEP_CLIENTE|||" in resto:
+                        temp2 = resto.split("|||SEP_CLIENTE|||")
+                        parte_consultor = temp2[0]
+                        parte_cliente = temp2[1]
+                    else:
+                        parte_consultor = resto
+                        parte_cliente = "⚠️ A IA não gerou o Resumo do Cliente separadamente."
+                else:
+                    # Se falhar o primeiro corte, joga tudo na primeira aba pra não perder info
+                    parte_impeditivos = texto_limpo
+                    parte_consultor = "⚠️ Corte automático falhou. Verifique a aba de Impeditivos."
+                    parte_cliente = "⚠️ Corte automático falhou."
 
                 st.markdown("---")
                 st.success("✅ Análise Concluída! Visualize os relatórios abaixo:")
@@ -100,15 +110,12 @@ elif opcao == "2. Lançamento (Analisar Missão)":
                 tab1, tab2, tab3 = st.tabs(["🛑 1. IMPEDITIVOS (Veredito)", "👷 2. CONSULTOR (Técnico)", "👔 3. CLIENTE (Resumo)"])
                 
                 with tab1:
-                    st.error("⚠️ LEIA PRIMEIRO: ANÁLISE DE RISCOS FATAIS")
                     st.markdown(parte_impeditivos)
                 
                 with tab2:
-                    st.info("Detalhes para montagem da proposta")
                     st.markdown(parte_consultor)
                     
                 with tab3:
-                    st.success("Texto pronto para enviar ao Diretor")
                     st.markdown(parte_cliente)
         else:
             st.error("⚠️ Edital não carregado.")
