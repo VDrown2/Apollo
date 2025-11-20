@@ -29,8 +29,8 @@ def analisar_dna_cliente(api_key, documentos_texto, nuances):
     
     genai.configure(api_key=api_key)
     
-    # MANOBRA DE EMERGÊNCIA: Usando modelo clássico
-    modelo_escolhido = 'gemini-pro'
+    # ATUALIZADO: Usando o motor mais potente descoberto no seu hangar (2.5 Flash)
+    modelo_escolhido = 'gemini-2.5-flash'
     
     try:
         model = genai.GenerativeModel(modelo_escolhido) 
@@ -54,8 +54,8 @@ def analisar_edital_com_dna(api_key, texto_edital, dna_cliente):
 
     genai.configure(api_key=api_key)
     
-    # MANOBRA DE EMERGÊNCIA: Usando modelo clássico
-    modelo_escolhido = 'gemini-pro'
+    # ATUALIZADO: Usando o motor mais potente descoberto no seu hangar (2.5 Flash)
+    modelo_escolhido = 'gemini-2.5-flash'
     
     try:
         model = genai.GenerativeModel(modelo_escolhido)
