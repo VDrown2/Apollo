@@ -28,21 +28,22 @@ def analisar_dna_cliente(api_key, documentos_texto, nuances):
     if not api_key: return "ERRO: Chave de Acesso não detectada."
     
     genai.configure(api_key=api_key)
+    # Usando o modelo mais estável disponível
     modelo_escolhido = 'gemini-2.5-flash'
     
     try:
         model = genai.GenerativeModel(modelo_escolhido) 
         prompt = f"""
         ATUE COMO: Auditor Técnico de Engenharia.
-        OBJETIVO: Criar Perfil Técnico da empresa.
+        OBJETIVO: Criar Perfil Técnico da empresa (EUCAPISO ou similar).
         
-        DIRETRIZES: "{nuances}"
-        ACERVO: {documentos_texto[:300000]}
+        DIRETRIZES ESTRATÉGICAS: "{nuances}"
+        ACERVO TÉCNICO: {documentos_texto[:300000]}
         
         SAÍDA:
-        1. Matriz de Competência (O que fazem).
-        2. Destaques do Acervo (Maiores obras).
-        3. Mapa de Restrições (O que não fazem).
+        1. Pontos Fortes (Atestados, CNAEs, Capacidade).
+        2. Pontos Fracos/Impeditivos (O que não faz, restrições).
+        3. Dados Financeiros (Se houver no texto).
         """
         response = model.generate_content(prompt)
         return response.text
@@ -51,7 +52,7 @@ def analisar_dna_cliente(api_key, documentos_texto, nuances):
         return f"⚠️ FALHA NO MOTOR {modelo_escolhido}. \n\nErro: {e}\n\n✅ DISPONÍVEIS: {lista}"
 
 def analisar_edital_com_dna(api_key, texto_edital, dna_cliente):
-    """Módulo B: Análise em 3 Estágios com Separadores Robustos."""
+    """Módulo B: Análise Profunda com Super Prompt."""
     if not api_key: return "ERRO: Chave de Acesso não detectada."
 
     genai.configure(api_key=api_key)
@@ -59,47 +60,60 @@ def analisar_edital_com_dna(api_key, texto_edital, dna_cliente):
     
     try:
         model = genai.GenerativeModel(modelo_escolhido)
+        
+        # O SEU SUPER PROMPT COMEÇA AQUI
         prompt = f"""
-        ATUE COMO: Consultor Sênior de Licitações.
-        CONTEXTO (DNA): {dna_cliente}
-        EDITAL: {texto_edital[:300000]}
-        
-        SUA MISSÃO: Gerar 3 relatórios em sequência. É CRUCIAL usar as tags de separação exatas abaixo.
-        
+        "A partir de agora, você atuará como Analista de Risco e Consultor Estratégico de Licitações. Siga todas as regras rigorosamente."
+
+        1. CONTEXTO E MISSÃO
+        Sua especialidade é dissecação forense de editais e análise de gaps.
+        Você deve comparar o EDITAL fornecido com o PERFIL DO CLIENTE abaixo.
+
         ---
-        PARTE 1: IMPEDITIVOS CRÍTICOS (O "Matador" de Proposta)
-        Objetivo: Identificar IMEDIATAMENTE se devemos abortar.
-        Conteúdo:
-        # 🛑 ANÁLISE DE RISCO FATAL
-        * **Veredito Rápido:** [GO / NO-GO / RISCO]
-        * **Impeditivos Técnicos:** (Liste apenas o que a empresa NÃO tem e o edital exige. Se não houver, diga "Nenhum").
-        * **Impeditivos Jurídicos:** (Índices inalcançáveis, falência, etc).
+        3. PERFIL DO CLIENTE (DNA)
+        {dna_cliente}
+        ---
+
+        5. DOCUMENTO A ANALISAR (EDITAL/TR)
+        {texto_edital[:400000]}
+        ---
+
+        7. FORMATO DE SAÍDA (OBRIGATÓRIO - 3 BLOCOS SEPARADOS)
         
-        ESCREVA A TAG DE SEPARAÇÃO 1 ABAIXO (Sem negrito):
+        Você deve gerar a resposta dividida EXATAMENTE pelas tags de separação indicadas.
+
+        🎯 BLOCO 1: ALERTA DE RISCO (Análise de Gaps)
+        Conteúdo:
+        * PONTOS DE IMPUGNAÇÃO (Ação Imediata - Ilegalidades, Marcas).
+        * IMPEDITIVOS (Bloqueadores Vermelhos - Ex: CREA, Balanço ruim).
+        * PROBLEMAS (Riscos Altos Amarelos).
+        * OPORTUNIDADES (Pontos Fortes Verdes).
+        
+        (Regra: Cite sempre o Item/Anexo da fonte).
+
+        AGORA, ESCREVA EXATAMENTE A TAG DE SEPARAÇÃO ABAIXO (Sem negrito):
         |||SEP_CONSULTOR|||
-        
-        PARTE 2: DOSSIÊ TÉCNICO (Para o Consultor/Engenheiro)
-        Objetivo: Detalhar a montagem da proposta.
+
+        📊 BLOCO 2: ANÁLISE TÉCNICA INTERNA (Para o Consultor)
         Conteúdo:
-        # 👷‍♂️ ANÁLISE TÉCNICA DETALHADA
-        ## 1. Checklist de Habilitação
-        (Tabela comparativa item a item: Edital vs DNA).
-        ## 2. Documentos Específicos
-        (O que precisa separar agora? Atestados, Certidões, Balanço).
-        ## 3. Pontos de Atenção
-        (Multas, Prazos, Garantia).
+        ANÁLISE DO PROCESSO: [Nº e ano]
+        1. Análise Direta (Checklist Rápido: Órgão, Portal, Data, Critério, Valor, Visita, etc).
+        2. Análise Reversa (Exigências e Prazos: Objeto detalhado, Habilitação Jurídica/Técnica/Fiscal/Econômica).
+        3. Exigências Pós-Homologação e Minuta de Contrato.
         
-        ESCREVA A TAG DE SEPARAÇÃO 2 ABAIXO (Sem negrito):
+        AGORA, ESCREVA EXATAMENTE A TAG DE SEPARAÇÃO ABAIXO (Sem negrito):
         |||SEP_CLIENTE|||
-        
-        PARTE 3: RESUMO EXECUTIVO (Para o Dono/Cliente)
-        Objetivo: Texto simples para WhatsApp/Email.
+
+        📄 BLOCO 3: RESUMO EXECUTIVO (Para o Cliente Final)
         Conteúdo:
-        # 👔 RESUMO PARA DIRETORIA
-        * **Oportunidade:** (Resumo do objeto e valor).
-        * **Nossa Situação:** (Temos atestado? Sim/Não).
-        * **Recomendação:** (Participar ou não, e porquê, em 1 frase simples).
+        "Olá, equipe [Nome do Cliente]."
+        * Oportunidade: [Órgão] - [Objeto Resumido]
+        * Licitação: [Número]
+        * Data da Disputa: [Data/Hora]
+        * Exigências-Chave (Apenas o que foge do padrão e requer atenção do dono).
+        * Veredito Simples.
         """
+        
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
