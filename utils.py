@@ -23,7 +23,7 @@ def analisar_dna_cliente(api_key, documentos_texto, nuances):
         
     genai.configure(api_key=api_key)
     # Usamos o Gemini 1.5 Flash que é rápido e inteligente o suficiente para resumos
-    model = genai.GenerativeModel('gemini-1.5-flash') 
+    model = genai.GenerativeModel('gemini-1.5-flash-latest') 
     
     prompt = f"""
     ATUE COMO: Consultor Sênior de Licitações e Engenharia.
@@ -57,7 +57,7 @@ def analisar_edital_com_dna(api_key, texto_edital, dna_cliente):
         return "ERRO: API Key não configurada."
 
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
     
     prompt = f"""
     ATUE COMO: Consultor Jurídico e Técnico de Licitações (Forensic Bid Analyst).
