@@ -24,45 +24,34 @@ def diagnostico_modelos():
         return [f"Erro ao listar modelos: {e}"]
 
 def analisar_dna_cliente(api_key, documentos_texto, nuances):
-    """Módulo A: Criação do Perfil Técnico (Sério)."""
+    """Módulo A: Criação do Perfil Técnico."""
     if not api_key: return "ERRO: Chave de Acesso não detectada."
     
     genai.configure(api_key=api_key)
-    
-    # Mantendo o motor potente que funcionou para você
     modelo_escolhido = 'gemini-2.5-flash'
     
     try:
         model = genai.GenerativeModel(modelo_escolhido) 
         prompt = f"""
-        ATUE COMO: Auditor Técnico de Engenharia e Licitações.
-        OBJETIVO: Mapear a Capacidade Técnica Operacional da empresa com base em documentos comprobatórios.
+        ATUE COMO: Auditor Técnico de Engenharia.
+        OBJETIVO: Criar Perfil Técnico da empresa.
         
-        DIRETRIZES ESTRATÉGICAS (O que o diretoria informou):
-        "{nuances}"
+        DIRETRIZES: "{nuances}"
+        ACERVO: {documentos_texto[:300000]}
         
-        ACERVO TÉCNICO (Atestados e Contratos):
-        {documentos_texto[:300000]}
-        
-        SAÍDA OBRIGATÓRIA (Use linguagem técnica e formal):
-        
-        ## 1. Matriz de Competência
-        (Liste as áreas de engenharia/serviço onde a empresa possui atestação robusta).
-        
-        ## 2. Destaques do Acervo
-        (Liste os 3 maiores contratos/obras realizados, citando quantitativos se houver).
-        
-        ## 3. Mapa de Restrições (Gap Analysis)
-        (O que a empresa NÃO comprova tecnicamente ou precisa subcontratar? Baseie-se na ausência de atestados para certas atividades citadas nas nuances).
+        SAÍDA:
+        1. Matriz de Competência (O que fazem).
+        2. Destaques do Acervo (Maiores obras).
+        3. Mapa de Restrições (O que não fazem).
         """
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
         lista = diagnostico_modelos()
-        return f"⚠️ FALHA NO MOTOR {modelo_escolhido}. \n\nErro técnico: {e}\n\n✅ MOTORES DISPONÍVEIS: {lista}"
+        return f"⚠️ FALHA NO MOTOR {modelo_escolhido}. \n\nErro: {e}\n\n✅ DISPONÍVEIS: {lista}"
 
 def analisar_edital_com_dna(api_key, texto_edital, dna_cliente):
-    """Módulo B: Análise de Licitação (Dividida em Visão Cliente e Visão Consultor)."""
+    """Módulo B: Análise em 3 Estágios (Impeditivos -> Consultor -> Cliente)."""
     if not api_key: return "ERRO: Chave de Acesso não detectada."
 
     genai.configure(api_key=api_key)
@@ -71,49 +60,52 @@ def analisar_edital_com_dna(api_key, texto_edital, dna_cliente):
     try:
         model = genai.GenerativeModel(modelo_escolhido)
         prompt = f"""
-        ATUE COMO: Consultor Sênior de Licitações Públicas.
-        CONTEXTO DA EMPRESA (DNA): {dna_cliente}
-        EDITAL EM ANÁLISE: {texto_edital[:300000]}
+        ATUE COMO: Consultor Sênior de Licitações.
+        CONTEXTO (DNA): {dna_cliente}
+        EDITAL: {texto_edital[:300000]}
         
-        SUA MISSÃO: Analisar a viabilidade e os riscos desta licitação.
-        
-        GERE O RELATÓRIO EXATAMENTE COM AS SEÇÕES ABAIXO:
+        SUA MISSÃO: Gerar 3 relatórios em sequência, separados por tags específicas.
         
         ---
-        
-        # 🛑 VEREDITO FINAL: [GO / NO-GO / GO-COM-RISCO]
-        (Justificativa em 1 parágrafo direto).
-        
-        ---
-        
-        # 💼 SEÇÃO 1: RESUMO EXECUTIVO (PARA O CLIENTE LER)
-        *Escreva simples. O dono da empresa vai ler isso no celular.*
-        * **O que é:** (Resumo do objeto).
-        * **Quanto:** (Valor estimado, se houver).
-        * **Quando:** (Data da disputa).
-        * **Principais Riscos:** (Resumo dos 2 maiores problemas, sem tecniquês).
+        PARTE 1: IMPEDITIVOS CRÍTICOS (O "Matador" de Proposta)
+        Objetivo: Identificar IMEDIATAMENTE se devemos abortar.
+        Conteúdo:
+        # 🛑 ANÁLISE DE RISCO FATAL
+        * **Veredito Rápido:** [GO / NO-GO / RISCO]
+        * **Impeditivos Técnicos:** (Liste apenas o que a empresa NÃO tem e o edital exige. Se não houver, diga "Nenhum").
+        * **Impeditivos Jurídicos:** (Índices inalcançáveis, falência, etc).
         
         ---
+        ESCREVA EXATAMENTE A TAG ABAIXO:
+        |||SEP_CONSULTOR|||
+        ---
         
-        # 🕵️‍♂️ SEÇÃO 2: ANÁLISE TÉCNICA PROFUNDA (PARA O CONSULTOR)
-        *Aqui você deve ser técnico, jurídico e detalhista.*
+        PARTE 2: DOSSIÊ TÉCNICO (Para o Consultor/Engenheiro)
+        Objetivo: Detalhar a montagem da proposta.
+        Conteúdo:
+        # 👷‍♂️ ANÁLISE TÉCNICA DETALHADA
+        ## 1. Checklist de Habilitação
+        (Tabela comparativa item a item: Edital vs DNA).
+        ## 2. Documentos Específicos
+        (O que precisa separar agora? Atestados, Certidões, Balanço).
+        ## 3. Pontos de Atenção
+        (Multas, Prazos, Garantia).
         
-        ## A. Habilitação Técnica (Onde podemos cair)
-        * Compare item a item do DNA com o Edital.
-        * Use emojis: 🔴 (Falta Atestado), 🟡 (Atestado Parcial/Dúvida), 🟢 (Atendemos).
-        * Cite a página ou item do edital onde está a exigência.
+        ---
+        ESCREVA EXATAMENTE A TAG ABAIXO:
+        |||SEP_CLIENTE|||
+        ---
         
-        ## B. Armadilhas Jurídicas e Financeiras
-        * Índices contábeis exigidos (LG, SG, IL).
-        * Exigências de garantia incomuns.
-        * Multas abusivas.
-        
-        ## C. Plano de Ação do Consultor
-        * Liste documentos específicos que precisam ser montados.
-        * Sugestão de Pedido de Esclarecimento ou Impugnação (se houver cláusulas restritivas).
+        PARTE 3: RESUMO EXECUTIVO (Para o Dono/Cliente)
+        Objetivo: Texto simples para WhatsApp/Email.
+        Conteúdo:
+        # 👔 RESUMO PARA DIRETORIA
+        * **Oportunidade:** (Resumo do objeto e valor).
+        * **Nossa Situação:** (Temos atestado? Sim/Não).
+        * **Recomendação:** (Participar ou não, e porquê, em 1 frase simples).
         """
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
         lista = diagnostico_modelos()
-        return f"⚠️ FALHA NO MOTOR {modelo_escolhido}. \n\nErro técnico: {e}\n\n✅ MOTORES DISPONÍVEIS: {lista}"
+        return f"⚠️ FALHA NO MOTOR {modelo_escolhido}. \n\nErro: {e}\n\n✅ DISPONÍVEIS: {lista}"
