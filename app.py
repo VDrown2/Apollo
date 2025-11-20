@@ -2,111 +2,107 @@ import streamlit as st
 import pandas as pd
 from utils import ler_pdf, analisar_dna_cliente, analisar_edital_com_dna
 
-# --- CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(page_title="LicitaAI Pro", page_icon="⚖️", layout="wide")
+# --- CONFIGURAÇÃO DO COCKPIT ---
+st.set_page_config(page_title="Apollo Mission Control", page_icon="🚀", layout="wide")
 
-# Título Principal
-st.title("⚖️ LicitaAI: Sistema de Inteligência para Licitações")
-st.markdown("Referência: Cenário 2 - O Caminho Profissional de Baixo Custo")
+# Cabeçalho Espacial
+st.title("🚀 Projeto Apollo: Controle de Missão")
+st.markdown("**Status:** Sistema Operacional | **Versão:** 2.0 (Deep Space)")
 
-# --- BARRA LATERAL ---
-st.sidebar.header("Navegação")
-opcao = st.sidebar.radio("Escolha a etapa:", ["1. DNA do Cliente (Cadastro)", "2. Análise de Edital (Mão na Massa)"])
+# --- COMPUTADOR DE BORDO (Sidebar) ---
+st.sidebar.header("📟 Painel de Comando")
+opcao = st.sidebar.radio("Selecione o Sistema:", ["1. Hangar (Configurar Agência)", "2. Lançamento (Analisar Missão)"])
 
-# Pegando a Chave Secreta (Vamos configurar isso no passo final)
-# Se não achar a chave secreta, pede na tela (bom para testes)
+# Chave de Acesso
 if "GEMINI_API_KEY" in st.secrets:
     api_key = st.secrets["GEMINI_API_KEY"]
 else:
-    api_key = st.sidebar.text_input("Cole sua API Key do Google aqui:", type="password")
+    api_key = st.sidebar.text_input("🔑 Insira Chave de Acesso (API Key):", type="password")
 
-# --- MEMÓRIA DO SISTEMA ---
-# Como não estamos usando Banco de Dados real ainda, usamos a memória do navegador
-if 'clientes' not in st.session_state:
-    st.session_state['clientes'] = {} # Dicionário vazio para guardar clientes
+# Memória da Nave
+if 'agencias' not in st.session_state:
+    st.session_state['agencias'] = {} 
 
 # ==================================================
-# TELA 1: CADASTRO DE DNA (O PERFIL TÉCNICO)
+# SISTEMA 1: HANGAR (DNA DA EMPRESA)
 # ==================================================
-if opcao == "1. DNA do Cliente (Cadastro)":
-    st.header("🧬 Módulo A: DNA do Cliente")
-    st.info("Aqui você ensina a IA sobre a empresa. Faça isso apenas uma vez por cliente.")
+if opcao == "1. Hangar (Configurar Agência)":
+    st.header("🛸 Hangar: Configuração da Frota")
+    st.info("Cadastre as especificações técnicas da sua Agência Espacial (Empresa).")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        nome_empresa = st.text_input("Nome da Empresa/Cliente")
-        nuances = st.text_area("Nuances e 'Jeito de Trabalhar'", 
-            placeholder="Ex: Somos fortes em obras civis, mas não temos engenheiro mecânico. Terceirizamos ar-condicionado.",
+        nome_empresa = st.text_input("Nome da Agência (Empresa)")
+        nuances = st.text_area("Diretrizes da Base (O que vocês fazem de melhor?)", 
+            placeholder="Ex: Especialistas em propulsão (obras civis), mas terceirizamos o suporte de vida (elétrica).",
             height=150)
             
     with col2:
-        st.write("📂 **Upload de Documentos Prova**")
-        st.write("(Contrato Social, Atestados de Capacidade, Balanços)")
-        arquivos = st.file_uploader("Selecione os PDFs", type="pdf", accept_multiple_files=True)
+        st.write("📂 **Planos e Certificações (PDFs)**")
+        st.write("(Contratos Sociais, Atestados Técnicos)")
+        arquivos = st.file_uploader("Carregar Arquivos de Sistema", type="pdf", accept_multiple_files=True)
 
-    if st.button("Gerar DNA Técnico"):
+    if st.button("🛠️ Construir Manual da Nave"):
         if not api_key:
-            st.error("Coloque a API Key na barra lateral!")
+            st.error("⚠️ Chave de Acesso não inserida nos propulsores!")
         elif not nome_empresa or not arquivos:
-            st.warning("Preencha o nome e suba arquivos.")
+            st.warning("⚠️ Dados insuficientes para decolagem.")
         else:
-            with st.spinner("Lendo documentos e criando perfil... (Isso pode levar uns segundos)"):
-                # 1. Juntar todo texto dos PDFs
+            with st.spinner("🔄 Processando telemetria e compilando dados..."):
+                # 1. Processar Documentos
                 texto_total = ""
                 for arq in arquivos:
                     texto_total += ler_pdf(arq) + "\n"
                 
-                # 2. Chamar a IA
+                # 2. IA Gera o DNA
                 dna_gerado = analisar_dna_cliente(api_key, texto_total, nuances)
                 
-                # 3. Salvar na memória
-                st.session_state['clientes'][nome_empresa] = dna_gerado
+                # 3. Salvar
+                st.session_state['agencias'][nome_empresa] = dna_gerado
                 
-                st.success(f"DNA da '{nome_empresa}' criado e salvo na memória!")
-                st.markdown("### 📝 Resumo Gerado (DNA):")
+                st.success(f"✅ Agência '{nome_empresa}' registrada no sistema Apollo!")
+                st.markdown("### 📄 Manual de Voo Gerado:")
                 st.write(dna_gerado)
 
-    # Mostrar quem já está na memória
-    if st.session_state['clientes']:
+    # Mostrar Agências Ativas
+    if st.session_state['agencias']:
         st.divider()
-        st.subheader("Clientes na Memória Atual:")
-        st.write(list(st.session_state['clientes'].keys()))
+        st.subheader("🌌 Frotas Disponíveis:")
+        st.write(list(st.session_state['agencias'].keys()))
 
 # ==================================================
-# TELA 2: ANÁLISE DE EDITAL (O DIA A DIA)
+# SISTEMA 2: LANÇAMENTO (ANÁLISE DE EDITAL)
 # ==================================================
-elif opcao == "2. Análise de Edital (Mão na Massa)":
-    st.header("🔎 Módulo B: Análise Forense de Edital")
+elif opcao == "2. Lançamento (Analisar Missão)":
+    st.header("🪐 Simulação de Missão (Análise de Edital)")
     
-    # Verifica se tem cliente cadastrado
-    if not st.session_state['clientes']:
-        st.warning("⚠️ Você ainda não cadastrou nenhum cliente no Módulo 1.")
+    if not st.session_state['agencias']:
+        st.warning("⚠️ Nenhuma frota detectada. Vá ao Hangar primeiro.")
         st.stop()
     
-    # Selecionar Cliente
-    cliente_escolhido = st.selectbox("Para qual cliente é esta licitação?", list(st.session_state['clientes'].keys()))
+    # Selecionar Nave
+    agencia_escolhida = st.selectbox("🚀 Selecionar Nave para a Missão:", list(st.session_state['agencias'].keys()))
     
-    # Mostrar DNA escondido (Expander)
-    with st.expander(f"Ver DNA carregado de: {cliente_escolhido}"):
-        st.write(st.session_state['clientes'][cliente_escolhido])
+    with st.expander(f"🔍 Ver Especificações da {agencia_escolhida}"):
+        st.write(st.session_state['agencias'][agencia_escolhida])
         
     st.divider()
     
-    # Upload do Edital
-    edital = st.file_uploader("📄 Suba o Edital ou Termo de Referência (PDF)", type="pdf")
+    # Upload da Missão
+    edital = st.file_uploader("📜 Carregar Parâmetros da Missão (Edital PDF)", type="pdf")
     
-    if st.button("Analisar Riscos e Oportunidades"):
+    if st.button("🔴 INICIAR CONTAGEM REGRESSIVA (Analisar)"):
         if not edital:
-            st.error("Preciso do PDF do edital!")
+            st.error("⚠️ Parâmetros da missão não encontrados (Falta PDF).")
         else:
-            with st.spinner(f"A IA está lendo o edital e cruzando com o perfil da {cliente_escolhido}..."):
+            with st.spinner(f"🛰️ Computador central calculando trajetória para {agencia_escolhida}..."):
                 texto_edital = ler_pdf(edital)
-                dna_atual = st.session_state['clientes'][cliente_escolhido]
+                dna_atual = st.session_state['agencias'][agencia_escolhida]
                 
-                # Chama a IA para cruzar os dados
+                # IA Analisa
                 resultado = analisar_edital_com_dna(api_key, texto_edital, dna_atual)
                 
                 st.markdown("---")
-                st.subheader("📊 Relatório de Inteligência")
+                st.subheader("📡 Relatório de Viabilidade da Missão")
                 st.markdown(resultado)
