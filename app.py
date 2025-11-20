@@ -5,9 +5,25 @@ from utils import ler_pdf, analisar_dna_cliente, analisar_edital_com_dna
 # --- CONFIGURAÇÃO DO COCKPIT ---
 st.set_page_config(page_title="Apollo Mission Control", page_icon="🚀", layout="wide")
 
+# Estilo CSS para deixar o relatório bonito
+st.markdown("""
+<style>
+    .reportview-container {
+        background: #0e1117;
+    }
+    .veredicto-box {
+        padding: 20px;
+        border-radius: 10px;
+        background-color: #1e2130;
+        border: 1px solid #4a4e69;
+        margin-bottom: 20px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Cabeçalho Espacial
 st.title("🚀 Projeto Apollo: Controle de Missão")
-st.markdown("**Status:** Sistema Operacional | **Versão:** 2.0 (Deep Space)")
+st.markdown("**Status:** Sistema Operacional | **IA:** Gemini 2.5 Flash (Consultor Ativado)")
 
 # --- COMPUTADOR DE BORDO (Sidebar) ---
 st.sidebar.header("📟 Painel de Comando")
@@ -27,29 +43,29 @@ if 'agencias' not in st.session_state:
 # SISTEMA 1: HANGAR (DNA DA EMPRESA)
 # ==================================================
 if opcao == "1. Hangar (Configurar Agência)":
-    st.header("🛸 Hangar: Configuração da Frota")
-    st.info("Cadastre as especificações técnicas da sua Agência Espacial (Empresa).")
+    st.header("🛸 Hangar: Calibragem de DNA Corporativo")
+    st.info("Cadastre a capacidade técnica. A IA irá gerar um perfil estritamente técnico.")
     
     col1, col2 = st.columns(2)
     
     with col1:
         nome_empresa = st.text_input("Nome da Agência (Empresa)")
         nuances = st.text_area("Diretrizes da Base (O que vocês fazem de melhor?)", 
-            placeholder="Ex: Especialistas em propulsão (obras civis), mas terceirizamos o suporte de vida (elétrica).",
+            placeholder="Ex: Somos fortes em obras civis, mas não temos engenheiro mecânico. Terceirizamos ar-condicionado.",
             height=150)
             
     with col2:
-        st.write("📂 **Planos e Certificações (PDFs)**")
+        st.write("📂 **Documentação Comprobatória**")
         st.write("(Contratos Sociais, Atestados Técnicos)")
         arquivos = st.file_uploader("Carregar Arquivos de Sistema", type="pdf", accept_multiple_files=True)
 
-    if st.button("🛠️ Construir Manual da Nave"):
+    if st.button("🛠️ Processar Capacidade Técnica"):
         if not api_key:
             st.error("⚠️ Chave de Acesso não inserida nos propulsores!")
         elif not nome_empresa or not arquivos:
             st.warning("⚠️ Dados insuficientes para decolagem.")
         else:
-            with st.spinner("🔄 Processando telemetria e compilando dados..."):
+            with st.spinner("🔄 Auditoria IA em andamento..."):
                 # 1. Processar Documentos
                 texto_total = ""
                 for arq in arquivos:
@@ -61,9 +77,9 @@ if opcao == "1. Hangar (Configurar Agência)":
                 # 3. Salvar
                 st.session_state['agencias'][nome_empresa] = dna_gerado
                 
-                st.success(f"✅ Agência '{nome_empresa}' registrada no sistema Apollo!")
-                st.markdown("### 📄 Manual de Voo Gerado:")
-                st.write(dna_gerado)
+                st.success(f"✅ Agência '{nome_empresa}' calibrada com sucesso!")
+                st.markdown("### 📑 Perfil Técnico Gerado:")
+                st.info(dna_gerado)
 
     # Mostrar Agências Ativas
     if st.session_state['agencias']:
@@ -75,7 +91,7 @@ if opcao == "1. Hangar (Configurar Agência)":
 # SISTEMA 2: LANÇAMENTO (ANÁLISE DE EDITAL)
 # ==================================================
 elif opcao == "2. Lançamento (Analisar Missão)":
-    st.header("🪐 Simulação de Missão (Análise de Edital)")
+    st.header("🪐 Simulação de Lançamento (Análise de Edital)")
     
     if not st.session_state['agencias']:
         st.warning("⚠️ Nenhuma frota detectada. Vá ao Hangar primeiro.")
@@ -84,19 +100,20 @@ elif opcao == "2. Lançamento (Analisar Missão)":
     # Selecionar Nave
     agencia_escolhida = st.selectbox("🚀 Selecionar Nave para a Missão:", list(st.session_state['agencias'].keys()))
     
-    with st.expander(f"🔍 Ver Especificações da {agencia_escolhida}"):
-        st.write(st.session_state['agencias'][agencia_escolhida])
+    # Expander discreto para ver o DNA se precisar
+    with st.expander(f"🔍 Ver DNA Técnico: {agencia_escolhida}"):
+        st.text(st.session_state['agencias'][agencia_escolhida])
         
     st.divider()
     
     # Upload da Missão
-    edital = st.file_uploader("📜 Carregar Parâmetros da Missão (Edital PDF)", type="pdf")
+    edital = st.file_uploader("📜 Carregar Edital da Missão (PDF)", type="pdf")
     
-    if st.button("🔴 INICIAR CONTAGEM REGRESSIVA (Analisar)"):
+    if st.button("🔴 INICIAR ANÁLISE FORENSE"):
         if not edital:
-            st.error("⚠️ Parâmetros da missão não encontrados (Falta PDF).")
+            st.error("⚠️ Edital não detectado.")
         else:
-            with st.spinner(f"🛰️ Computador central calculando trajetória para {agencia_escolhida}..."):
+            with st.spinner(f"🛰️ Cruzando dados da {agencia_escolhida} com exigências do Edital..."):
                 texto_edital = ler_pdf(edital)
                 dna_atual = st.session_state['agencias'][agencia_escolhida]
                 
@@ -104,5 +121,5 @@ elif opcao == "2. Lançamento (Analisar Missão)":
                 resultado = analisar_edital_com_dna(api_key, texto_edital, dna_atual)
                 
                 st.markdown("---")
-                st.subheader("📡 Relatório de Viabilidade da Missão")
+                # Exibe o resultado
                 st.markdown(resultado)
