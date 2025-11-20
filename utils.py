@@ -51,7 +51,7 @@ def analisar_dna_cliente(api_key, documentos_texto, nuances):
         return f"⚠️ FALHA NO MOTOR {modelo_escolhido}. \n\nErro: {e}\n\n✅ DISPONÍVEIS: {lista}"
 
 def analisar_edital_com_dna(api_key, texto_edital, dna_cliente):
-    """Módulo B: Análise em 3 Estágios (Impeditivos -> Consultor -> Cliente)."""
+    """Módulo B: Análise em 3 Estágios com Separadores Robustos."""
     if not api_key: return "ERRO: Chave de Acesso não detectada."
 
     genai.configure(api_key=api_key)
@@ -64,7 +64,7 @@ def analisar_edital_com_dna(api_key, texto_edital, dna_cliente):
         CONTEXTO (DNA): {dna_cliente}
         EDITAL: {texto_edital[:300000]}
         
-        SUA MISSÃO: Gerar 3 relatórios em sequência, separados por tags específicas.
+        SUA MISSÃO: Gerar 3 relatórios em sequência. É CRUCIAL usar as tags de separação exatas abaixo.
         
         ---
         PARTE 1: IMPEDITIVOS CRÍTICOS (O "Matador" de Proposta)
@@ -75,10 +75,8 @@ def analisar_edital_com_dna(api_key, texto_edital, dna_cliente):
         * **Impeditivos Técnicos:** (Liste apenas o que a empresa NÃO tem e o edital exige. Se não houver, diga "Nenhum").
         * **Impeditivos Jurídicos:** (Índices inalcançáveis, falência, etc).
         
-        ---
-        ESCREVA EXATAMENTE A TAG ABAIXO:
+        ESCREVA A TAG DE SEPARAÇÃO 1 ABAIXO (Sem negrito):
         |||SEP_CONSULTOR|||
-        ---
         
         PARTE 2: DOSSIÊ TÉCNICO (Para o Consultor/Engenheiro)
         Objetivo: Detalhar a montagem da proposta.
@@ -91,10 +89,8 @@ def analisar_edital_com_dna(api_key, texto_edital, dna_cliente):
         ## 3. Pontos de Atenção
         (Multas, Prazos, Garantia).
         
-        ---
-        ESCREVA EXATAMENTE A TAG ABAIXO:
+        ESCREVA A TAG DE SEPARAÇÃO 2 ABAIXO (Sem negrito):
         |||SEP_CLIENTE|||
-        ---
         
         PARTE 3: RESUMO EXECUTIVO (Para o Dono/Cliente)
         Objetivo: Texto simples para WhatsApp/Email.
