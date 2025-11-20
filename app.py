@@ -14,7 +14,7 @@ st.markdown("""
 
 # Cabeçalho
 st.title("🚀 Projeto Apollo: Controle de Missão")
-st.markdown("**Status:** Sistema Operacional | **IA:** Gemini 2.5 Flash")
+st.markdown("**Status:** Sistema Operacional | **IA:** Gemini 2.5 Flash (Modo Estratégico)")
 
 # --- PAINEL LATERAL ---
 st.sidebar.header("📟 Painel de Comando")
@@ -48,7 +48,6 @@ if opcao == "1. Hangar (Configurar Agência)":
                 for arq in arquivos: texto += ler_pdf(arq) + "\n"
                 dna = analisar_dna_cliente(api_key, texto, nuances)
                 st.session_state['agencias'][nome] = dna
-                st.session_state['agencias'][nome] = dna
                 st.success(f"Agência '{nome}' calibrada!")
                 st.info(dna)
         else:
@@ -60,16 +59,21 @@ if opcao == "1. Hangar (Configurar Agência)":
 elif opcao == "2. Lançamento (Analisar Missão)":
     st.header("🪐 Simulação de Lançamento")
     
-    if not st.session_state['agencias']:
-        st.warning("⚠️ Hangar vazio.")
-        st.stop()
-    
-    agencia = st.selectbox("🚀 Selecionar Nave:", list(st.session_state['agencias'].keys()))
+    # Upload PRIMEIRO (Mudança de fluxo a pedido)
+    st.info("Passo 1: Carregue os documentos da missão (Edital/TR)")
     edital = st.file_uploader("📜 Carregar Edital (PDF)", type="pdf")
     
-    if st.button("🔴 INICIAR ANÁLISE"):
-        if edital:
-            with st.spinner("🛰️ Processando telemetria da missão..."):
+    if not st.session_state['agencias']:
+        st.warning("⚠️ Hangar vazio. Cadastre uma agência primeiro.")
+        st.stop()
+    
+    # Seleção de Cliente DEPOIS
+    if edital:
+        st.info("Passo 2: Identifique a Agência para esta missão")
+        agencia = st.selectbox("🚀 Selecionar Nave:", list(st.session_state['agencias'].keys()))
+        
+        if st.button("🔴 INICIAR ANÁLISE ESTRATÉGICA"):
+            with st.spinner("🛰️ Executando protocolo forense..."):
                 texto_edital = ler_pdf(edital)
                 dna = st.session_state['agencias'][agencia]
                 
@@ -77,45 +81,46 @@ elif opcao == "2. Lançamento (Analisar Missão)":
                 resultado_bruto = analisar_edital_com_dna(api_key, texto_edital, dna)
                 
                 # --- CORTE INTELIGENTE ---
-                # Remove formatação que a IA pode ter adicionado nas tags (ex: negrito)
                 texto_limpo = resultado_bruto.replace("**|||SEP_CONSULTOR|||**", "|||SEP_CONSULTOR|||")
                 texto_limpo = texto_limpo.replace("**|||SEP_CLIENTE|||**", "|||SEP_CLIENTE|||")
                 
-                partes = []
-                
-                # Tenta dividir Parte 1 e Resto
-                if "|||SEP_CONSULTOR|||" in texto_limpo:
-                    temp = texto_limpo.split("|||SEP_CONSULTOR|||")
-                    parte_impeditivos = temp[0]
-                    resto = temp[1]
-                    
-                    # Tenta dividir Parte 2 e Parte 3
-                    if "|||SEP_CLIENTE|||" in resto:
-                        temp2 = resto.split("|||SEP_CLIENTE|||")
-                        parte_consultor = temp2[0]
-                        parte_cliente = temp2[1]
+                # Tenta dividir
+                try:
+                    if "|||SEP_CONSULTOR|||" in texto_limpo:
+                        temp = texto_limpo.split("|||SEP_CONSULTOR|||")
+                        parte_1 = temp[0] # Alerta de Risco
+                        resto = temp[1]
+                        
+                        if "|||SEP_CLIENTE|||" in resto:
+                            temp2 = resto.split("|||SEP_CLIENTE|||")
+                            parte_2 = temp2[0] # Análise Técnica
+                            parte_3 = temp2[1] # Resumo Cliente
+                        else:
+                            parte_2 = resto
+                            parte_3 = "⚠️ A IA não gerou o Resumo do Cliente separadamente."
                     else:
-                        parte_consultor = resto
-                        parte_cliente = "⚠️ A IA não gerou o Resumo do Cliente separadamente."
-                else:
-                    # Se falhar o primeiro corte, joga tudo na primeira aba pra não perder info
-                    parte_impeditivos = texto_limpo
-                    parte_consultor = "⚠️ Corte automático falhou. Verifique a aba de Impeditivos."
-                    parte_cliente = "⚠️ Corte automático falhou."
+                        parte_1 = texto_limpo
+                        parte_2 = "⚠️ Corte automático falhou."
+                        parte_3 = "⚠️ Corte automático falhou."
+                except Exception:
+                    parte_1 = texto_limpo
+                    parte_2 = "Erro."
+                    parte_3 = "Erro."
 
                 st.markdown("---")
-                st.success("✅ Análise Concluída! Visualize os relatórios abaixo:")
+                st.success("✅ Análise Forense Concluída!")
                 
-                # Cria as 3 ABAS na ordem desejada
-                tab1, tab2, tab3 = st.tabs(["🛑 1. IMPEDITIVOS (Veredito)", "👷 2. CONSULTOR (Técnico)", "👔 3. CLIENTE (Resumo)"])
+                # Cria as 3 ABAS com os nomes exatos do seu prompt
+                tab1, tab2, tab3 = st.tabs(["🎯 1. ALERTA DE RISCO (Gaps)", "📊 2. ANÁLISE TÉCNICA (Consultor)", "📄 3. RESUMO EXECUTIVO (Cliente)"])
                 
                 with tab1:
-                    st.markdown(parte_impeditivos)
+                    st.error("⚠️ PONTOS CRÍTICOS E IMPUGNAÇÕES")
+                    st.markdown(parte_1)
                 
                 with tab2:
-                    st.markdown(parte_consultor)
+                    st.info("ℹ️ DETALHAMENTO DO PROCESSO")
+                    st.markdown(parte_2)
                     
                 with tab3:
-                    st.markdown(parte_cliente)
-        else:
-            st.error("⚠️ Edital não carregado.")
+                    st.success("✉️ PRONTO PARA ENVIO")
+                    st.markdown(parte_3)
