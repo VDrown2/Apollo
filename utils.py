@@ -1,96 +1,108 @@
-import google.generativeai as genai
-import PyPDF2
-import io
+import streamlit as st
+import pandas as pd
+from utils import ler_pdf, analisar_dna_cliente, analisar_edital_com_dna
 
-def ler_pdf(uploaded_file):
-    """Lê o PDF e transforma em texto puro."""
-    try:
-        pdf_reader = PyPDF2.PdfReader(uploaded_file)
-        text = ""
-        for page in pdf_reader.pages:
-            text += page.extract_text() or ""
-        return text
-    except Exception as e:
-        return f"Erro ao ler PDF: {e}"
+# --- CONFIGURAÇÃO DO COCKPIT ---
+st.set_page_config(page_title="Apollo Mission Control", page_icon="🚀", layout="wide")
 
-def analisar_dna_cliente(api_key, documentos_texto, nuances):
-    """
-    Módulo A: Ingestão do DNA.
-    Cria o REC (Resumo Estruturado de Capacidade).
-    """
-    if not api_key:
-        return "ERRO: API Key não configurada."
+# Cabeçalho Espacial
+st.title("🚀 Projeto Apollo: Controle de Missão")
+st.markdown("**Status:** Sistema Operacional | **Versão:** 2.0 (Deep Space)")
+
+# --- COMPUTADOR DE BORDO (Sidebar) ---
+st.sidebar.header("📟 Painel de Comando")
+opcao = st.sidebar.radio("Selecione o Sistema:", ["1. Hangar (Configurar Agência)", "2. Lançamento (Analisar Missão)"])
+
+# Chave de Acesso
+if "GEMINI_API_KEY" in st.secrets:
+    api_key = st.secrets["GEMINI_API_KEY"]
+else:
+    api_key = st.sidebar.text_input("🔑 Insira Chave de Acesso (API Key):", type="password")
+
+# Memória da Nave
+if 'agencias' not in st.session_state:
+    st.session_state['agencias'] = {} 
+
+# ==================================================
+# SISTEMA 1: HANGAR (DNA DA EMPRESA)
+# ==================================================
+if opcao == "1. Hangar (Configurar Agência)":
+    st.header("🛸 Hangar: Configuração da Frota")
+    st.info("Cadastre as especificações técnicas da sua Agência Espacial (Empresa).")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        nome_empresa = st.text_input("Nome da Agência (Empresa)")
+        nuances = st.text_area("Diretrizes da Base (O que vocês fazem de melhor?)", 
+            placeholder="Ex: Especialistas em propulsão (obras civis), mas terceirizamos o suporte de vida (elétrica).",
+            height=150)
+            
+    with col2:
+        st.write("📂 **Planos e Certificações (PDFs)**")
+        st.write("(Contratos Sociais, Atestados Técnicos)")
+        arquivos = st.file_uploader("Carregar Arquivos de Sistema", type="pdf", accept_multiple_files=True)
+
+    if st.button("🛠️ Construir Manual da Nave"):
+        if not api_key:
+            st.error("⚠️ Chave de Acesso não inserida nos propulsores!")
+        elif not nome_empresa or not arquivos:
+            st.warning("⚠️ Dados insuficientes para decolagem.")
+        else:
+            with st.spinner("🔄 Processando telemetria e compilando dados..."):
+                # 1. Processar Documentos
+                texto_total = ""
+                for arq in arquivos:
+                    texto_total += ler_pdf(arq) + "\n"
+                
+                # 2. IA Gera o DNA
+                dna_gerado = analisar_dna_cliente(api_key, texto_total, nuances)
+                
+                # 3. Salvar
+                st.session_state['agencias'][nome_empresa] = dna_gerado
+                
+                st.success(f"✅ Agência '{nome_empresa}' registrada no sistema Apollo!")
+                st.markdown("### 📄 Manual de Voo Gerado:")
+                st.write(dna_gerado)
+
+    # Mostrar Agências Ativas
+    if st.session_state['agencias']:
+        st.divider()
+        st.subheader("🌌 Frotas Disponíveis:")
+        st.write(list(st.session_state['agencias'].keys()))
+
+# ==================================================
+# SISTEMA 2: LANÇAMENTO (ANÁLISE DE EDITAL)
+# ==================================================
+elif opcao == "2. Lançamento (Analisar Missão)":
+    st.header("🪐 Simulação de Missão (Análise de Edital)")
+    
+    if not st.session_state['agencias']:
+        st.warning("⚠️ Nenhuma frota detectada. Vá ao Hangar primeiro.")
+        st.stop()
+    
+    # Selecionar Nave
+    agencia_escolhida = st.selectbox("🚀 Selecionar Nave para a Missão:", list(st.session_state['agencias'].keys()))
+    
+    with st.expander(f"🔍 Ver Especificações da {agencia_escolhida}"):
+        st.write(st.session_state['agencias'][agencia_escolhida])
         
-    genai.configure(api_key=api_key)
-    # Usamos o Gemini 1.5 Flash que é rápido e inteligente o suficiente para resumos
-    model = genai.GenerativeModel('gemini-1.5-flash-latest') 
+    st.divider()
     
-    prompt = f"""
-    ATUE COMO: Consultor Sênior de Licitações e Engenharia.
+    # Upload da Missão
+    edital = st.file_uploader("📜 Carregar Parâmetros da Missão (Edital PDF)", type="pdf")
     
-    TAREFA: Criar um "DNA Técnico" (Resumo Estruturado de Capacidade - REC) desta empresa.
-    
-    1. O QUE O DONO DA EMPRESA DISSE (NUANCES):
-    "{nuances}"
-    
-    2. O QUE ESTÁ NOS ATESTADOS E CONTRATOS (DOCUMENTOS):
-    {documentos_texto[:400000]} 
-    
-    SAÍDA ESPERADA (Responda apenas com o resumo):
-    Analise os documentos e crie um perfil técnico robusto.
-    - Liste as Áreas de Domínio (o que eles comprovadamente fazem).
-    - Liste os Maiores Atestados (Ex: "Obra de 500m²", "Fornecimento de 1000 itens").
-    - Liste RESTRIÇÕES: O que eles NÃO fazem ou precisam terceirizar (baseado nas nuances e falta de atestados).
-    """
-    
-    try:
-        response = model.generate_content(prompt)
-        return response.text
-    except Exception as e:
-        return f"Erro na IA: {e}"
-
-def analisar_edital_com_dna(api_key, texto_edital, dna_cliente):
-    """
-    Módulo B: Cross-Match (Edital vs DNA).
-    """
-    if not api_key:
-        return "ERRO: API Key não configurada."
-
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash-latest')
-    
-    prompt = f"""
-    ATUE COMO: Consultor Jurídico e Técnico de Licitações (Forensic Bid Analyst).
-    
-    CONTEXTO DO SEU CLIENTE (O DNA): 
-    {dna_cliente}
-    
-    DOCUMENTO PARA ANÁLISE (EDITAL):
-    {texto_edital[:800000]}
-    
-    SUA MISSÃO: 
-    Faça o "Cross-Match" (Confronto) entre o que o edital pede e o que o cliente tem.
-    
-    GERE UM RELATÓRIO NO SEGUINTE FORMATO:
-    
-    ## 1. Veredito Rápido
-    (Diga GO, NO-GO ou GO-COM-RISCO e explique em 1 frase).
-    
-    ## 2. Análise de Habilitação Técnica (Onde mora o perigo)
-    - Compare cada exigência técnica do edital com o DNA do cliente.
-    - Se o edital pede algo que o DNA não tem, marque com 🔴 [CRÍTICO].
-    - Se o edital pede algo que o DNA tem parcialmente, marque com 🟡 [ATENÇÃO].
-    - Se o DNA atende, marque com 🟢 [OK].
-    
-    ## 3. Pontos de Atenção Jurídica/Financeira
-    (Resuma garantias, prazos, multas pesadas).
-    
-    ## 4. Sugestão de Ação
-    (O que o consultor deve fazer agora? Ex: "Buscar parceiro para item X").
-    """
-    
-    try:
-        response = model.generate_content(prompt)
-        return response.text
-    except Exception as e:
-        return f"Erro na IA: {e}"
+    if st.button("🔴 INICIAR CONTAGEM REGRESSIVA (Analisar)"):
+        if not edital:
+            st.error("⚠️ Parâmetros da missão não encontrados (Falta PDF).")
+        else:
+            with st.spinner(f"🛰️ Computador central calculando trajetória para {agencia_escolhida}..."):
+                texto_edital = ler_pdf(edital)
+                dna_atual = st.session_state['agencias'][agencia_escolhida]
+                
+                # IA Analisa
+                resultado = analisar_edital_com_dna(api_key, texto_edital, dna_atual)
+                
+                st.markdown("---")
+                st.subheader("📡 Relatório de Viabilidade da Missão")
+                st.markdown(resultado)
